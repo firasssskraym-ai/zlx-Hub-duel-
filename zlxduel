@@ -1,0 +1,89 @@
+-- SPEED GUI | FAST & STABLE (NO RESPAWN) v2
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- SETTINGS (leicht schneller)
+local NORMAL_SPEED = 16
+local FAST_SPEED   = 45   -- bisschen schneller, noch stabil
+local enabled = false
+
+-- GUI CLEAN
+if player.PlayerGui:FindFirstChild("SpeedGUI") then
+    player.PlayerGui.SpeedGUI:Destroy()
+end
+
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.Name = "SpeedGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromOffset(260,130)
+frame.Position = UDim2.fromScale(0.5,0.5)
+frame.AnchorPoint = Vector2.new(0.5,0.5)
+frame.BackgroundColor3 = Color3.fromRGB(28,32,50)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "zlx Speed"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1,1,1)
+
+local btn = Instance.new("TextButton", frame)
+btn.Size = UDim2.new(1,-20,0,45)
+btn.Position = UDim2.new(0,10,0,60)
+btn.Text = "Speed: OFF"
+btn.Font = Enum.Font.Gotham
+btn.TextSize = 16
+btn.BackgroundColor3 = Color3.fromRGB(100,140,255)
+btn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", btn)
+
+-- SPEED LOGIC (SMART)
+local function updateSpeed()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    if enabled and hum.MoveDirection.Magnitude > 0 then
+        if hum.WalkSpeed ~= FAST_SPEED then
+            hum.WalkSpeed = FAST_SPEED
+        end
+    else
+        if hum.WalkSpeed ~= NORMAL_SPEED then
+            hum.WalkSpeed = NORMAL_SPEED
+        end
+    end
+end
+
+-- light loop (no lag)
+RunService.Heartbeat:Connect(function()
+    if enabled then updateSpeed() end
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(0.2)
+    updateSpeed()
+end)
+
+btn.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    btn.Text = enabled and "Speed: ON" or "Speed: OFF"
+    updateSpeed()
+end)
+
+-- F = GUI TOGGLE
+UIS.InputBegan:Connect(function(i,g)
+    if g then return end
+    if i.KeyCode == Enum.KeyCode.F then
+        frame.Visible = not frame.Visible
+    end
+end)
