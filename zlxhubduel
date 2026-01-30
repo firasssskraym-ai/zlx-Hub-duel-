@@ -1,0 +1,207 @@
+-- zlx Hub | RAINBOW CLEAN UI | SPEED + JUMP + SPIN + ESP (STABLE)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- SETTINGS (STABLE)
+local NORMAL_SPEED = 16
+local FAST_SPEED   = 45
+local JUMP_POWER   = 85
+local SPIN_RATE    = 12
+
+local speedOn, jumpOn, spinOn, espOn = false, false, false, false
+local spinAV
+local espBoxes = {}
+
+-- CLEAN OLD GUI
+if player.PlayerGui:FindFirstChild("zlxHub") then
+	player.PlayerGui.zlxHub:Destroy()
+end
+
+-- GUI
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.Name = "zlxHub"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromOffset(320,280)
+frame.Position = UDim2.fromScale(0.5,0.5)
+frame.AnchorPoint = Vector2.new(0.5,0.5)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,24)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
+
+-- RAINBOW TITLE
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,45)
+title.BackgroundTransparency = 1
+title.Text = "zlx Hub"
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 26
+title.TextStrokeTransparency = 0.6
+
+-- Rainbow effect
+task.spawn(function()
+	local h = 0
+	while true do
+		h = (h + 0.002) % 1
+		title.TextColor3 = Color3.fromHSV(h,1,1)
+		task.wait()
+	end
+end)
+
+-- BUTTON CREATOR
+local function makeBtn(text, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(1,-30,0,40)
+	b.Position = UDim2.new(0,15,0,y)
+	b.Text = text .. " : OFF"
+	b.Font = Enum.Font.GothamMedium
+	b.TextSize = 15
+	b.BackgroundColor3 = Color3.fromRGB(30,30,40)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.AutoButtonColor = false
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+
+	local stroke = Instance.new("UIStroke", b)
+	stroke.Color = Color3.fromRGB(80,120,255)
+	stroke.Thickness = 1.2
+
+	b.MouseEnter:Connect(function()
+		b.BackgroundColor3 = Color3.fromRGB(40,40,55)
+	end)
+	b.MouseLeave:Connect(function()
+		b.BackgroundColor3 = Color3.fromRGB(30,30,40)
+	end)
+
+	return b
+end
+
+local speedBtn = makeBtn("Speed", 60)
+local jumpBtn  = makeBtn("Jump", 110)
+local spinBtn  = makeBtn("Spin", 160)
+local espBtn   = makeBtn("ESP", 210)
+
+-- HELPERS
+local function getHum()
+	local c = player.Character
+	return c and c:FindFirstChildOfClass("Humanoid")
+end
+
+local function getHRP()
+	local c = player.Character
+	return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+-- SPEED (SMART)
+RunService.Heartbeat:Connect(function()
+	if not speedOn then return end
+	local hum = getHum()
+	if hum and hum.MoveDirection.Magnitude > 0 then
+		hum.WalkSpeed = FAST_SPEED
+	end
+end)
+
+-- JUMP
+local function applyJump()
+	local hum = getHum()
+	if hum then
+		hum.UseJumpPower = true
+		hum.JumpPower = jumpOn and JUMP_POWER or 50
+	end
+end
+
+-- SPIN (NO RESPAWN)
+local function startSpin()
+	local hrp = getHRP()
+	if not hrp then return end
+	if spinAV then spinAV:Destroy() end
+
+	local att = hrp:FindFirstChild("SpinAtt") or Instance.new("Attachment", hrp)
+	att.Name = "SpinAtt"
+
+	spinAV = Instance.new("AngularVelocity")
+	spinAV.Attachment0 = att
+	spinAV.AngularVelocity = Vector3.new(0, SPIN_RATE, 0)
+	spinAV.MaxTorque = math.huge
+	spinAV.Parent = hrp
+end
+
+local function stopSpin()
+	if spinAV then spinAV:Destroy() spinAV = nil end
+end
+
+-- ESP
+local function clearESP()
+	for _,b in pairs(espBoxes) do b:Destroy() end
+	espBoxes = {}
+end
+
+local function createESP(plr)
+	if plr == player then return end
+	local function add(char)
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		local box = Instance.new("BoxHandleAdornment")
+		box.Adornee = hrp
+		box.Size = Vector3.new(4,6,2)
+		box.Color3 = Color3.fromRGB(255,100,100)
+		box.Transparency = 0.4
+		box.AlwaysOnTop = true
+		box.ZIndex = 10
+		box.Parent = gui
+		table.insert(espBoxes, box)
+	end
+	if plr.Character then add(plr.Character) end
+	plr.CharacterAdded:Connect(add)
+end
+
+-- BUTTON LOGIC
+speedBtn.MouseButton1Click:Connect(function()
+	speedOn = not speedOn
+	speedBtn.Text = speedOn and "Speed : ON" or "Speed : OFF"
+	if not speedOn then
+		local hum = getHum()
+		if hum then hum.WalkSpeed = NORMAL_SPEED end
+	end
+end)
+
+jumpBtn.MouseButton1Click:Connect(function()
+	jumpOn = not jumpOn
+	jumpBtn.Text = jumpOn and "Jump : ON" or "Jump : OFF"
+	applyJump()
+end)
+
+spinBtn.MouseButton1Click:Connect(function()
+	spinOn = not spinOn
+	spinBtn.Text = spinOn and "Spin : ON" or "Spin : OFF"
+	if spinOn then startSpin() else stopSpin() end
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+	espOn = not espOn
+	espBtn.Text = espOn and "ESP : ON" or "ESP : OFF"
+	clearESP()
+	if espOn then
+		for _,p in pairs(Players:GetPlayers()) do
+			createESP(p)
+		end
+	end
+end)
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	applyJump()
+	if spinOn then startSpin() end
+end)
+
+-- F = TOGGLE GUI
+UIS.InputBegan:Connect(function(i,g)
+	if g then return end
+	if i.KeyCode == Enum.KeyCode.F then
+		frame.Visible = not frame.Visible
+	end
+end)
